@@ -1,4 +1,6 @@
 fastapi
-uvicorn[standard]
-python-jose[cryptography]
-python-multipart
+uvicorn
+python-jose
+pyjwt
+requests
+cryptography

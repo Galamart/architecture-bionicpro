@@ -11,9 +11,9 @@ services:
       - ./postgres-keycloak-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-
   keycloak:
     image: quay.io/keycloak/keycloak:21.1
+    container_name: keycloak
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -30,7 +30,11 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/realms/reports-realm" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   frontend:
     build:
       context: ./frontend
@@ -42,8 +46,19 @@ services:
       REACT_APP_KEYCLOAK_URL: http://localhost:8080
       REACT_APP_KEYCLOAK_REALM: reports-realm
       REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend
-
-  reports-api:
-    build: ./api
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      KEYCLOAK_URL: http://keycloak:8080/realms/reports-realm
+      CLIENT_ID: reports-api
+      ALGORITHM: RS256
     ports:
       - "8000:8000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
